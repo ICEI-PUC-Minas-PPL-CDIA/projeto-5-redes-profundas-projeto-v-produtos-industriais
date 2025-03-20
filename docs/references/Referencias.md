@@ -1,6 +1,6 @@
 # Lista de Referências Utilizadas no Trabalhos - BIBTEX
 
-**1. MVTec AD--A comprehensive real-world dataset for unsupervised anomaly detection: **
+**1. MVTec AD--A comprehensive real-world dataset for unsupervised anomaly detection:**
    ~~~~
 {   
    @inproceedings{bergmann2019mvtec,
