@@ -1,0 +1,30 @@
+# Arquivos do Jupyter
+*.ipynb_checkpoints/
+*.ipynb_cache/
+
+# Arquivos do Vim e Neovim
+*~
+*.swp
+*.swo
+*.un~
+*.tmp
+Session.vim
+.netrwhist
+.viminfo
+
+# Arquivos do Visual Studio Code
+.vscode/
+.vscode/settings.json
+.vscode/tasks.json
+.vscode/launch.json
+.vscode/*.code-workspace
+
+# Ambiente virtual e arquivos de cache
+venv/
+.venv/
+*.pyc
+*.pyo
+*__pycache__/
+
+# Pasta com a base de dados - pelo volume da base
+data/
