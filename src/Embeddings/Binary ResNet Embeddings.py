@@ -1,4 +1,5 @@
-#%%
+# Versão corrigida do código original com melhorias para qualidade dos embeddings da Binary ResNet
+
 import sys
 import os
 import torch
@@ -15,7 +16,6 @@ from wrn_mcdonnell import WRN_McDonnell  # Arquitetura da rede binária
 BASE_DIR = "C:\\Users\\prodr\\Desktop\\Faculdade\\projeto-5-redes-profundas-projeto-v-produtos-industriais\\data"
 EMBEDDINGS_BASE_DIR = os.path.join(BASE_DIR, "Embeddings")
 
-#%%
 # Inicializa o modelo binarizado
 model = WRN_McDonnell(
     depth=20,
@@ -25,7 +25,7 @@ model = WRN_McDonnell(
 )
 model.eval()
 
-# Wrapper para extrair embeddings
+# Wrapper para extrair embeddings mais profundos (pós-bn + avgpool flatten)
 class EmbeddingNet(torch.nn.Module):
     def __init__(self, base_model):
         super().__init__()
@@ -37,36 +37,35 @@ class EmbeddingNet(torch.nn.Module):
         h = self.model.group1(h)
         h = self.model.group2(h)
         h = F.relu(self.model.bn(h))
-        return h.view(h.size(0), -1)
+        h = F.avg_pool2d(h, h.shape[-1])  # global average pooling
+        return h.view(h.size(0), -1)      # flatten
 
 embedding_model = EmbeddingNet(model)
 
-# Transforma imagens para entrada da rede
+# Transforma imagens com resolução maior e normalização RGB
 transform = transforms.Compose([
-    transforms.Resize((32, 32)),
+    transforms.Resize((96, 96)), 
     transforms.ToTensor(),
-    transforms.Normalize((0.5,), (0.5,))
+    transforms.Normalize((0.5, 0.5, 0.5), (0.5, 0.5, 0.5))  # RGB
 ])
 
-#%%
-# Percorre todas as subpastas de produtos
+# Loop por todas as classes/testes para extrair os embeddings
 for produto in os.listdir(BASE_DIR):
     produto_path = os.path.join(BASE_DIR, produto)
     test_dir = os.path.join(produto_path, "test")
 
     if not os.path.isdir(test_dir):
-        continue  # Ignora se não houver /test/
+        continue
 
-    print(f"\n🛠️ Processando produto: {produto}")
+    print(f"\n Processando produto: {produto}")
     all_data = []
 
-    # Varre cada classe dentro de /test/
     for class_name in os.listdir(test_dir):
         class_path = os.path.join(test_dir, class_name)
         if not os.path.isdir(class_path):
             continue
 
-        print(f"🔍 Classe: {class_name}")
+        print(f"Classe: {class_name}")
         for img_file in os.listdir(class_path):
             img_path = os.path.join(class_path, img_file)
             try:
@@ -78,12 +77,12 @@ for produto in os.listdir(BASE_DIR):
                     embedding = embedding.squeeze().numpy()
 
                 all_data.append(list(embedding) + [class_name])
-                print(f"✅ {img_file} ok")
+                print(f"{img_file} ok")
 
             except Exception as e:
-                print(f"⚠️ Erro ao processar {img_file}: {e}")
+                print(f"Erro ao processar {img_file}: {e}")
 
-    # Salva o CSV final do produto
+    # Salva CSV dos embeddings
     if all_data:
         produto_output_dir = os.path.join(EMBEDDINGS_BASE_DIR, produto)
         os.makedirs(produto_output_dir, exist_ok=True)
@@ -92,8 +91,8 @@ for produto in os.listdir(BASE_DIR):
         columns = [f"f{i}" for i in range(len(all_data[0]) - 1)] + ["label"]
         df = pd.DataFrame(all_data, columns=columns)
         df.to_csv(output_csv, index=False)
-        print(f"📦 Embeddings salvos em: {output_csv}")
+        print(f"Embeddings salvos em: {output_csv}")
     else:
-        print(f"⚠️ Nenhuma imagem encontrada para {produto}")
+        print(f"Nenhuma imagem encontrada para {produto}")
 
-print("\n🏁 Embeddings extraídos para todos os produtos!")
+print("\n Embeddings extraídos para todos os produtos!")
