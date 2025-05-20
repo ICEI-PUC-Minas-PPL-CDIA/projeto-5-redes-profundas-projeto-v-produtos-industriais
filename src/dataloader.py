@@ -18,58 +18,60 @@ LBP_METHOD = 'uniform'
 
 
 # Caminhos base
-BASE_DIR = r"C:\Projeto 5 - Redes Neurais Profundas\data\data"
+BASE_DIR = r"C:\Projeto 5 - Redes Neurais Profundas\data\data\cable"
 EMBEDDINGS_DIR = os.path.join(BASE_DIR, "Embeddings")
 
 
 
 class CableDataset(Dataset):
-    
-    def __init__(self, transform=None):
-        ## Carregamento dos dados
-        xy = np.loadtxt('./data/cable.csv', delimiter=',', dtype=np.float32, skiprows=1)
-        self.X = torch.from_numpy(xy[:,1:])
-        self.y = torch.from_numpy(xy[:,0]) # A coluna 0 está com a classe da imagem neste exemplo
-        self.n_samples = xy.shape[0] #número de linhas
-        
+    def __init__(self, root_dir, mode='train', transform=None):
+        """
+        Args:
+            root_dir (str): Caminho para o diretório 'data'.
+            mode (str): 'train' ou 'test'.
+            transform (callable, optional): As transformações que serão aplicadas nas imagens.
+        """
         self.transform = transform
+        self.image_paths = []
+        self.labels = []
 
-    def __getitem__(self, index):
-        ## Permite a indexacao dos items
-        sample = self.X[index], self.y[index]
+        if mode == 'train':
+            class_dir = os.path.join(root_dir, 'train', 'good')
+            for img_file in os.listdir(class_dir):
+                if img_file.endswith('.png'):
+                    self.image_paths.append(os.path.join(class_dir, img_file))
+                    self.labels.append(0)  # 0 para 'good'
 
-        if self.transform:
-            sample = self.transform(sample)
-        
+        elif mode == 'test':
+            test_dir = os.path.join(root_dir, 'test')
+            defect_types = os.listdir(test_dir)
+            for defect_type in defect_types:
+                class_dir = os.path.join(test_dir, defect_type)
+                if not os.path.isdir(class_dir):
+                    continue
+                for img_file in os.listdir(class_dir):
+                    if img_file.endswith('.png'):
+                        self.image_paths.append(os.path.join(class_dir, img_file))
+                        self.labels.append(0 if defect_type == 'good' else 1)  # 1 para defeito
+
     def __len__(self):
-        # retorna o tamanho do dataset
-        return self.n_samples
+        return len(self.image_paths)
+
+    def __getitem__(self, idx):
+        image = rgb2gray(cv2.imread(self.image_paths[idx]))
+        
+        if self.transform:
+            image = self.transform(image)
+        label = self.labels[idx]
+        return image, label
     
-class ToTensor:
-    
-    def __call__(self, sample):
-        inputs, targets = sample
-        return torch.from_numpy(inputs), torch.from_numpy(targets)
     
 
-dataset = CableDataset(transform=ToTensor())
-dataloader = DataLoader(dataset=dataset, 
-                        batch_size=256,
-                        shuffle=True,
-                        num_workers=4)
 
-#loop de treinamento
-num_epocas = 10
-total_amostras = len(dataset)
-n_iterations = math.ceil(total_amostras/256) #num de iterações é o tamanho total pelo tamanho do batchsize
-
-for epoca in range(num_epocas):
-    for i, (inputs, labels) in enumerate(dataloader):
-        # Realizar o forward backward, update
-        if(1+1)%5 == 0:
-            print(f'Época{epoca+1}/{num_epocas}, step {i+1}/{n_iterations}, inputs{inputs.shape}')
-
-dataiter = iter(dataloader)
-data = dataiter.next()
-features, labels = data
-print(features, labels)
+def main():
+    print("Olá, mundo.")
+    
+    
+    
+if __name__ == "__main__":
+    main()
