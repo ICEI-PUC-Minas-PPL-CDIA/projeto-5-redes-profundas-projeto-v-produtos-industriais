@@ -1,7 +1,7 @@
 from PIL import Image
 import numpy as np
-
-class CableDataset:
+from torch.utils.data import Dataset
+class CableDataset(Dataset):
     """
     Classe dataset para importar as imagens dos cabos 
 
