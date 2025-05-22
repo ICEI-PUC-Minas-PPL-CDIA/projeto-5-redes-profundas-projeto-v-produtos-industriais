@@ -1,6 +1,8 @@
 from PIL import Image
 import numpy as np
 from torch.utils.data import Dataset
+
+
 class CableDataset(Dataset):
     """
     Classe dataset para importar as imagens dos cabos 
@@ -10,6 +12,7 @@ class CableDataset(Dataset):
     - labels: list, rótulos correspondentes.
     - transform: callable, transformações aplicadas na imagem.
     """
+    
     def __init__(self, image_paths, labels, transform=None):
         self.image_paths = image_paths
         self.labels = labels
