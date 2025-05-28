@@ -2,13 +2,16 @@ import os
 import cv2
 import math
 import torch
-import torchvision
 import numpy as np
 import pandas as pd
+import torchvision
+import albumentations as A
+import matplotlib.pyplot as plt
+from albumentations.pytorch import ToTensorV2
+from PIL import Image
 from skimage.color import rgb2gray
 from skimage.feature import hog, local_binary_pattern
 from torch.utils.data import Dataset, DataLoader
-
 
 HOG_PIXELS_PER_CELL = (8, 8)
 HOG_CELLS_PER_BLOCK = (2, 2)
@@ -41,6 +44,7 @@ class CableDataset(Dataset):
                 if img_file.endswith('.png'):
                     self.image_paths.append(os.path.join(class_dir, img_file))
                     self.labels.append(0)  # 0 para 'good'
+                    
 
         elif mode == 'test':
             test_dir = os.path.join(root_dir, 'test')
@@ -58,20 +62,136 @@ class CableDataset(Dataset):
         return len(self.image_paths)
 
     def __getitem__(self, idx):
-        image = rgb2gray(cv2.imread(self.image_paths[idx]))
+        image = Image.open(self.image_paths[idx]).convert("RGB")
         
         if self.transform:
             image = self.transform(image)
         label = self.labels[idx]
         return image, label
     
+
+class albumentationClass:
+    """
+        Classe para realizar as transformações na imagem através da biblioteca Albumentations. Em cada chamada espera-se que ocorra uma modificação da imagem de treinamento, dentro de um intervalo específico de valores.
+        As imagens serão modificadas levemente para que a rede possa generalizar o aprendizado. Isso tornará o modelo mais robusto.
+    """
     
+    def __init__(self):
+        
+        self.transform =A.Compose([
+        A.Resize(256, 256),
+        A.OneOf([
+            A.GaussianBlur(blur_limit=(0,10),p=0.3), #30% de chance de aplicar um GaussianBlur na imagem
+            A.MotionBlur(blur_limit= (3,11),p=0.6), #60% de chance de aplicar um MotionBlur na imagem.
+            A.HorizontalFlip(p=0.6),
+            A.RandomBrightnessContrast(brightness_limit=(-0.2, 0.3), p=0.7),
+            A.HueSaturationValue(p=0.7)
+            ],
+            p=0.7 #70% de chance de aplicar alguma das transformações definidas dentro do OneOf
+        ),
+        A.Normalize(mean=(0.5, 0.5, 0.5), std=(0.5, 0.5, 0.5)),
+        ToTensorV2()
+        ],
+        seed=10)
+
+    def __call__(self, image):
+        image = np.array(image)  # de PIL para NumPy
+        augmented = self.transform(image=image)
+        return augmented['image']
+        
+        
+    
+def show_batch(imgs, labels):
+    """
+    Exibe um batch de imagens com seus respectivos rótulos.
+
+    Parâmetros:
+    - imgs: Tensor de imagens com shape [batch_size, C, H, W]
+    - labels: Tensor de rótulos com shape [batch_size]
+
+    O PyTorch trabalha com imagens no formato [C, H, W],
+    mas o matplotlib espera [H, W, C].
+    Por isso, fazemos o permute.
+    """
+    def get_subplot_grid(n):
+        """Retorna (nrows, ncols) para n subplots com layout mais quadrado possível."""
+        ncols = math.ceil(math.sqrt(n))
+        nrows = math.ceil(n / ncols)
+        return nrows, ncols
+
+    
+
+
+    grid_size = len(imgs)  # Número de imagens no batch
+    num_linas, num_colunas = get_subplot_grid(grid_size)
+
+    fig, ax = plt.subplots(nrows=num_linas, ncols=num_colunas, figsize=(20, 15))  # Cria a grade de subplots
+    ax = ax.flatten()
+
+    # Define o número real de imagens a serem mostradas
+    num_imgs = min(len(imgs), len(ax))
+
+    for i in range(num_imgs):
+        img = imgs[i]
+        img = img.permute(1, 2, 0)
+        img = img.cpu().numpy()
+        img = (img - img.min()) / (img.max() - img.min() + 1e-5)
+
+        ax[i].imshow(img)
+        ax[i].set_title(f"Label: {labels[i].item()}")
+        ax[i].axis('off')
+
+    # Desativa os subplots extras (se existirem)
+    for j in range(num_imgs, len(ax)):
+        ax[j].axis('off')
+
+    plt.tight_layout()
+    plt.show()
+    
+    # for i in range(grid_size):
+    #     # 1. Seleciona a imagem i-ésima
+    #     img = imgs[i]
+
+    #     # 2. Reorganiza as dimensões: [C, H, W] → [H, W, C]
+    #     img = img.permute(1, 2, 0)
+
+    #     # 3. Converte o tensor para numpy array (matplotlib só trabalha com numpy)
+    #     img = img.cpu().numpy()
+
+    #     # 4. Ajusta o range dos valores para [0, 1] para visualização correta
+    #     img = (img - img.min()) / (img.max() - img.min() + 1e-5)
+
+    #     # 5. Mostra a imagem no subplot
+    #     axs[i].imshow(img)
+
+    #     # 6. Coloca o título com o rótulo correspondente
+    #     axs[i].set_title(f"Label: {labels[i].item()}")
+        
+    #     # 7. Remove as marcas dos eixos para deixar a visualização limpa
+    #     axs[i].axis('off')
+
+    # plt.show()
 
 
 def main():
     print("Olá, mundo.")
     
-    
+    albuTransf = albumentationClass()
+
+    dataset = CableDataset(root_dir= BASE_DIR,
+                           mode='train', 
+                           transform=albuTransf)
+
+    dataloader = DataLoader(dataset, 
+                            batch_size=8, 
+                            shuffle=True, 
+                            num_workers=8)
+
+    for imgs, lbls in dataloader:
+        show_batch(imgs, lbls)
+        break
+        
+        
     
 if __name__ == "__main__":
     main()
