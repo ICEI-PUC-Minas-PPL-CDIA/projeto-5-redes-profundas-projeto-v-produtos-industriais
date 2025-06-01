@@ -33,13 +33,19 @@ class CableDataset(Dataset):
             root_dir (str): Caminho para o diretório 'data'.
             mode (str): 'train' ou 'test'.
             transform (callable, optional): As transformações que serão aplicadas nas imagens.
+            
+            
+            
+            Deve-se colocar todas as classes na base de treinamento. Ela deve aprender quais são os defeitos. 
+            Entao deve-se passar o caminho para o conjunto de teste com os defeitos. 
+            No caso do balanceamento, talvez seja interessante fazer uma undersampling manual. As imagens boas estão com as umas diferenças na rotação
         """
         self.transform = transform
         self.image_paths = []
         self.labels = []
 
         if mode == 'train':
-            class_dir = os.path.join(root_dir, 'train', 'good')
+            class_dir = os.path.join(root_dir, 'train', 'good') #adicionar o caminho para as imagens de teste com os defeitos
             for img_file in os.listdir(class_dir):
                 if img_file.endswith('.png'):
                     self.image_paths.append(os.path.join(class_dir, img_file))
@@ -62,6 +68,12 @@ class CableDataset(Dataset):
         return len(self.image_paths)
 
     def __getitem__(self, idx):
+        
+        """
+            Deve-se diferenciar o modo de treino e de teste.
+            Esse método é chamado pelo Dataloarde. No caso de teste apenas transformação do resize.
+            Realizar um teste no getitem para  sanidade (ver se esta tudo funcionando)
+        """
         image = Image.open(self.image_paths[idx]).convert("RGB")
         
         if self.transform:
@@ -74,7 +86,13 @@ class albumentationClass:
     """
         Classe para realizar as transformações na imagem através da biblioteca Albumentations. Em cada chamada espera-se que ocorra uma modificação da imagem de treinamento, dentro de um intervalo específico de valores.
         As imagens serão modificadas levemente para que a rede possa generalizar o aprendizado. Isso tornará o modelo mais robusto.
+        
+        
+        Para o albumentation, deve-se colocar para os dois modos. Tanto para teste quanto para treinamento. No treinamento deve-se aplicar as modificações nas imagens boas e para o teste deve-se apenas aplicar o resize. 
+        Verificar no caso da transformação Normalize, quais são os melhores parametros para normalização da imagem. Os parametros de mean, std para o CIFAR100. Ou outro conjunto de imagens que a rede foi treinada.
+        
     """
+    
     
     def __init__(self):
         
@@ -100,7 +118,6 @@ class albumentationClass:
         return augmented['image']
         
         
-    
 def show_batch(imgs, labels):
     """
     Exibe um batch de imagens com seus respectivos rótulos.
@@ -118,9 +135,6 @@ def show_batch(imgs, labels):
         ncols = math.ceil(math.sqrt(n))
         nrows = math.ceil(n / ncols)
         return nrows, ncols
-
-    
-
 
     grid_size = len(imgs)  # Número de imagens no batch
     num_linas, num_colunas = get_subplot_grid(grid_size)
@@ -148,31 +162,7 @@ def show_batch(imgs, labels):
     plt.tight_layout()
     plt.show()
     
-    # for i in range(grid_size):
-    #     # 1. Seleciona a imagem i-ésima
-    #     img = imgs[i]
-
-    #     # 2. Reorganiza as dimensões: [C, H, W] → [H, W, C]
-    #     img = img.permute(1, 2, 0)
-
-    #     # 3. Converte o tensor para numpy array (matplotlib só trabalha com numpy)
-    #     img = img.cpu().numpy()
-
-    #     # 4. Ajusta o range dos valores para [0, 1] para visualização correta
-    #     img = (img - img.min()) / (img.max() - img.min() + 1e-5)
-
-    #     # 5. Mostra a imagem no subplot
-    #     axs[i].imshow(img)
-
-    #     # 6. Coloca o título com o rótulo correspondente
-    #     axs[i].set_title(f"Label: {labels[i].item()}")
-        
-    #     # 7. Remove as marcas dos eixos para deixar a visualização limpa
-    #     axs[i].axis('off')
-
-    # plt.show()
-
-
+    
 def main():
     print("Olá, mundo.")
     
