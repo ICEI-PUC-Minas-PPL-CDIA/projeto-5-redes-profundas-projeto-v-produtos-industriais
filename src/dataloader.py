@@ -90,8 +90,8 @@ class CableDataset(Dataset):
         
         """
             Deve-se diferenciar o modo de treino e de teste.
-            Esse método é chamado pelo Dataloarde. No caso de teste apenas transformação do resize.
-            Realizar um teste no getitem para  sanidade (ver se esta tudo funcionando)
+            Esse método é chamado pelo Dataloader. No caso de teste apenas transformação do resize.
+            Realizar um teste no getitem para sanidade (ver se esta tudo funcionando)
         """
         image = Image.open(self.image_paths[idx]).convert("RGB")
         
