@@ -1,31 +1,15 @@
 import os
-import cv2
 import math
 import torch
 import numpy as np
-import pandas as pd
-import torchvision
 import albumentations as A
 import matplotlib.pyplot as plt
 from albumentations.pytorch import ToTensorV2
 from PIL import Image
-from skimage.color import rgb2gray
-from skimage.feature import hog, local_binary_pattern
 from torch.utils.data import Dataset, DataLoader
-
-HOG_PIXELS_PER_CELL = (8, 8)
-HOG_CELLS_PER_BLOCK = (2, 2)
-LBP_RADIUS = 3
-LBP_POINTS = 8 * LBP_RADIUS
-LBP_METHOD = 'uniform'
-
 
 # Caminhos base
 BASE_DIR = r"C:\Projeto 5 - Redes Neurais Profundas\data\data\cable"
-EMBEDDINGS_DIR = os.path.join(BASE_DIR, "Embeddings")
-
-
-
 class CableDataset(Dataset):
     def __init__(self, root_dir, mode='train', transform=None):
         """
@@ -101,18 +85,11 @@ class CableDataset(Dataset):
         return image, label
     
 
-class albumentationClass:
+class albumentationTrain:
     """
         Classe para realizar as transformações na imagem através da biblioteca Albumentations. Em cada chamada espera-se que ocorra uma modificação da imagem de treinamento, dentro de um intervalo específico de valores.
         As imagens serão modificadas levemente para que a rede possa generalizar o aprendizado. Isso tornará o modelo mais robusto.
-        
-        
-        Para o albumentation, deve-se colocar para os dois modos. Tanto para teste quanto para treinamento. No treinamento deve-se aplicar as modificações nas imagens boas e para o teste deve-se apenas aplicar o resize. 
-        Verificar no caso da transformação Normalize, quais são os melhores parametros para normalização da imagem. Os parametros de mean, std para o CIFAR100. Ou outro conjunto de imagens que a rede foi treinada.
-        
     """
-    
-    
     def __init__(self):
         
         self.transform =A.Compose([
@@ -126,7 +103,33 @@ class albumentationClass:
             ],
             p=0.7 #70% de chance de aplicar alguma das transformações definidas dentro do OneOf
         ),
-        A.Normalize(mean=(0.5, 0.5, 0.5), std=(0.5, 0.5, 0.5)),
+        A.Normalize( #Para o conjunto de dados CIFAR-100, encontrou-se que os parâmetros para normalização da imagem são os seguintes
+            mean=(0.5071, 0.4865, 0.4409),
+            std=(0.2675, 0.2565, 0.2761)
+        ),
+        ToTensorV2()
+        ],
+        seed=10)
+
+    def __call__(self, image):
+        image = np.array(image)  # de PIL para NumPy
+        augmented = self.transform(image=image)
+        return augmented['image']
+        
+class albumentationTest:
+    """
+        Classe para realizar as transformações na imagem através da biblioteca Albumentations. Em cada chamada espera-se que ocorra uma modificação da imagem de treinamento, dentro de um intervalo específico de valores.
+        As imagens serão modificadas levemente para que a rede possa generalizar o aprendizado. Isso tornará o modelo mais robusto.
+    """
+    
+    def __init__(self):
+        
+        self.transform =A.Compose([
+        A.Resize(256, 256),
+        A.Normalize( #Para o conjunto de dados CIFAR-100, encontrou-se (https://gist.github.com/weiaicunzai/e623931921efefd4c331622c344d8151) que os parâmetros para normalização da imagem são os seguintes
+            mean=(0.5071, 0.4865, 0.4409),
+            std=(0.2675, 0.2565, 0.2761)
+        ),
         ToTensorV2()
         ],
         seed=10)
@@ -185,13 +188,18 @@ def show_batch(imgs, labels):
 def main():
     print("Olá, mundo.")
     
-    albuTransf = albumentationClass()
+    albuTransfTrain = albumentationTrain()
+    albuTransfTest = albumentationTest()
 
-    dataset = CableDataset(root_dir= BASE_DIR,
-                           mode='train', 
-                           transform=albuTransf)
+    train_dataset = CableDataset(root_dir= BASE_DIR,
+                           mode="train", 
+                           transform=albuTransfTrain)
+    
+    test_dataset = CableDataset(root_dir=BASE_DIR,
+                                mode="test",
+                                transform=albuTransfTest)
 
-    dataloader = DataLoader(dataset, 
+    dataloader = DataLoader(train_dataset, 
                             batch_size=8, 
                             shuffle=True, 
                             num_workers=8)
