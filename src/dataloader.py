@@ -43,26 +43,45 @@ class CableDataset(Dataset):
         self.transform = transform
         self.image_paths = []
         self.labels = []
+        self.class_to_idx = {}
 
         if mode == 'train':
-            class_dir = os.path.join(root_dir, 'train', 'good') #adicionar o caminho para as imagens de teste com os defeitos
-            for img_file in os.listdir(class_dir):
-                if img_file.endswith('.png'):
-                    self.image_paths.append(os.path.join(class_dir, img_file))
-                    self.labels.append(0)  # 0 para 'good'
-                    
+            # Percorre subpastas (classes de defeito ou boa) dentro da pasta raiz
+            dir_treino = os.path.join(root_dir,"train")
+            for idx, class_name in enumerate(sorted(os.listdir(dir_treino))):
+                # Criando caminho para a pasta das classes
+                class_path = os.path.join(dir_treino, class_name)
+                # Checando se é diretório
+                if os.path.isdir(class_path):
+                    #Mapeando as classes de defeito ou boa em dicionário
+                    # {"bent_wire":0, "cable_swap":1, ...}
+                    self.class_to_idx[class_name] = idx
+
+                    # Percorre as imagens dentro da pasta da classe
+                    for file_name in os.listdir(class_path):
+                        #Checando se o nome dos arquivos terminam com png
+                        if file_name.endswith(".png"):
+                            #Criando o caminho da imagem
+                            file_path = os.path.join(class_path, file_name)
+                            #Adicionando o caminho da imagem no atributo da classe
+                            self.image_paths.append(file_path)
+                            #Adicionando o label da imagem no atributo da classe
+                            self.labels.append(idx)
+                            
 
         elif mode == 'test':
-            test_dir = os.path.join(root_dir, 'test')
-            defect_types = os.listdir(test_dir)
-            for defect_type in defect_types:
-                class_dir = os.path.join(test_dir, defect_type)
-                if not os.path.isdir(class_dir):
-                    continue
-                for img_file in os.listdir(class_dir):
-                    if img_file.endswith('.png'):
-                        self.image_paths.append(os.path.join(class_dir, img_file))
-                        self.labels.append(0 if defect_type == 'good' else 1)  # 1 para defeito
+            dir_test = os.path.join(root_dir, 'test')
+            for idx, class_name in enumerate(sorted(os.listdir(dir_test))):
+                class_path = os.path.join(dir_test, class_name)
+                if os.path.isdir(class_path):
+                    self.class_to_idx[class_name] = idx
+                for file_name in os.listdir(class_path):
+                        if file_name.endswith(".png"):
+                            file_path = os.path.join(class_path, file_name)
+                            self.image_paths.append(file_path)
+                            self.labels.append(idx)
+
+
 
     def __len__(self):
         return len(self.image_paths)
