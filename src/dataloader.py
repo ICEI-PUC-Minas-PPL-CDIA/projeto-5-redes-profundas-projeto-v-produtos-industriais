@@ -78,10 +78,10 @@ class CableDataset(Dataset):
             Realizar um teste no getitem para sanidade (ver se esta tudo funcionando)
         """
         image = Image.open(self.image_paths[idx]).convert("RGB")
+        label = self.labels[idx]
         
         if self.transform:
             image = self.transform(image)
-        label = self.labels[idx]
         return image, label
     
 
