@@ -1,1 +1,4 @@
-from wrn_mcdonnell import *
+from bynary_wide_resnet.wrn_mcdonnell import WRN_McDonnell
+from bynary_wide_resnet.wrn_mcdonnell import DownsampleBlock
+from bynary_wide_resnet.wrn_mcdonnell import ModuleBinarizable
+from bynary_wide_resnet.wrn_mcdonnell import ForwardSign
