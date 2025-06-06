@@ -1,6 +1,7 @@
 import albumentations as A
 from albumentations.pytorch import ToTensorV2
 import numpy as np
+import torch
 
 class AlbumentationsTransform:
     def __init__(self, mode="train"):
@@ -23,6 +24,15 @@ class AlbumentationsTransform:
             ])
 
     def __call__(self, image):
-        image_np = np.array(image)
+        # Garante que a imagem está em RGB
+        image_np = np.array(image.convert("RGB"))
+
+        # Aplica as transformações
         augmented = self.transform(image=image_np)
-        return augmented['image']
+        tensor = augmented['image']
+
+        # Garante que a saída está em float32 no intervalo [0, 1]
+        if tensor.dtype != torch.float32:
+            tensor = tensor.float() / 255.0
+
+        return tensor
