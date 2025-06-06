@@ -14,19 +14,11 @@ class AlbumentationsTransform:
                     A.RandomBrightnessContrast(p=0.3),
                     A.HueSaturationValue(p=0.3),
                 ], p=0.7),
-                A.Normalize(
-                    mean=(0.5071, 0.4865, 0.4409),
-                    std=(0.2675, 0.2565, 0.2761)
-                ),
                 ToTensorV2()
             ])
         else:
             self.transform = A.Compose([
                 A.Resize(256, 256),
-                A.Normalize(
-                    mean=(0.5071, 0.4865, 0.4409),
-                    std=(0.2675, 0.2565, 0.2761)
-                ),
                 ToTensorV2()
             ])
 
