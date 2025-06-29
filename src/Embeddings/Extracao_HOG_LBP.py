@@ -14,7 +14,7 @@ LBP_POINTS = 8 * LBP_RADIUS
 LBP_METHOD = 'uniform'
 
 # Caminhos base
-BASE_DIR = "C:\\Users\\prodr\\Desktop\\Faculdade\\projeto-5-redes-profundas-projeto-v-produtos-industriais\\data"
+BASE_DIR = r"/home/pedro/Documentos/Faculdade/projeto-5-redes-profundas-projeto-v-produtos-industriais/data"
 EMBEDDINGS_DIR = os.path.join(BASE_DIR, "Embeddings")
 
 #%%==== Funções auxiliares
@@ -34,17 +34,16 @@ def process_lbp(image_gray):
 #%%==== Loop por todos os produtos em data/
 for produto in os.listdir(BASE_DIR):
     produto_path = os.path.join(BASE_DIR, produto)
-    test_dir = os.path.join(produto_path, "test")
-    if not os.path.isdir(test_dir):
+    if not os.path.isdir(produto_path):
         continue
 
     print(f"\n📦 Produto: {produto}")
     hog_data = []
     lbp_data = []
 
-    # Varre cada classe dentro de test/
-    for label in os.listdir(test_dir):
-        class_dir = os.path.join(test_dir, label)
+    # Varre cada classe diretamente dentro do produto
+    for label in os.listdir(produto_path):
+        class_dir = os.path.join(produto_path, label)
         if not os.path.isdir(class_dir):
             continue
 
@@ -86,3 +85,5 @@ for produto in os.listdir(BASE_DIR):
     print(f"💾 Embeddings HOG e LBP salvos para '{produto}'.")
 
 print("\n🏁 Extração de HOG e LBP concluída para todos os produtos!")
+
+# %%
